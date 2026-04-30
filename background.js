@@ -7,17 +7,17 @@ const M3UParser = {
     const lines = text.split(/\r?\n/);
     const channels = [];
     let current = null;
+    const hasGroups = /group-title="/i.test(text);
     for (const raw of lines) {
       const line = raw.trim();
       if (line.startsWith("#EXTINF")) {
         const name       = line.replace(/^#EXTINF[^,]*,/, "").trim();
         const groupMatch = line.match(/group-title="([^"]*)"/i);
         const logoMatch  = line.match(/tvg-logo="([^"]*)"/i);
-        current = {
-          name:  name || "Unnamed",
-          group: groupMatch ? groupMatch[1].trim() : "Uncategorized",
-          logo:  logoMatch  ? logoMatch[1]  : "",
-        };
+        const group = hasGroups
+          ? (groupMatch?.[1]?.trim() || "Uncategorized")
+          : "Channels";
+        current = { name: name || "Unnamed", group, logo: logoMatch ? logoMatch[1] : "" };
       } else if (line && !line.startsWith("#") && current) {
         current.url = line;
         channels.push(current);

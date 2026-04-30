@@ -494,21 +494,23 @@ $("btn-cancel-form").addEventListener("click", hidePlaylistForm);
 /* ═══════════════════════════════════════════════════
    Local M3U file parser (FileReader — no network needed)
 ═══════════════════════════════════════════════════ */
-function parseM3UText(text) {
+function parseM3UText(text, defaultGroup = "Channels") {
   const lines = text.split(/\r?\n/);
   const channels = [];
   let current = null;
+  // First pass: detect whether any group-title attributes are present
+  const hasGroups = /group-title="/i.test(text);
   for (const raw of lines) {
     const line = raw.trim();
     if (line.startsWith("#EXTINF")) {
       const name       = line.replace(/^#EXTINF[^,]*,/, "").trim();
       const groupMatch = line.match(/group-title="([^"]*)"/i);
       const logoMatch  = line.match(/tvg-logo="([^"]*)"/i);
-      current = {
-        name:  name || "Unnamed",
-        group: groupMatch ? groupMatch[1].trim() : "Uncategorized",
-        logo:  logoMatch  ? logoMatch[1]  : "",
-      };
+      // Use group-title if file has them; otherwise fall back to defaultGroup (filename)
+      const group = hasGroups
+        ? (groupMatch?.[1]?.trim() || "Uncategorized")
+        : defaultGroup;
+      current = { name: name || "Unnamed", group, logo: logoMatch ? logoMatch[1] : "" };
     } else if (line && !line.startsWith("#") && current) {
       current.url = line;
       channels.push(current);
@@ -550,10 +552,10 @@ $("btn-save").addEventListener("click", async () => {
     let added = 0;
     for (const file of files) {
       try {
-        const text    = await readFileAsText(file);
-        const parsed  = parseM3UText(text);
-        if (!parsed.total) { setStatus(`${file.name}: 0 channels found — skipped`, true); continue; }
         const baseName = file.name.replace(/\.m3u8?$/i, "");
+        const text     = await readFileAsText(file);
+        const parsed   = parseM3UText(text, baseName);
+        if (!parsed.total) { setStatus(`${file.name}: 0 channels found — skipped`, true); continue; }
         const plName   = files.length === 1 && name ? name : baseName;
         const pl = {
           id:       String(Date.now()) + "_" + added,
