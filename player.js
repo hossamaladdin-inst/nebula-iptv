@@ -325,12 +325,6 @@ function loadStream(url, name) {
 
 /* ── Stop playback when tab is closed or navigated away ── */
 window.addEventListener("beforeunload", stopAndRelease);
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    video.pause();
-    if (hls) hls.stopLoad();
-  }
-});
 
 /* ════════════════════════════════════════════════════
    Boot: load stream + playlist from storage
