@@ -556,7 +556,7 @@ $("btn-save").addEventListener("click", async () => {
         const text     = await readFileAsText(file);
         const parsed   = parseM3UText(text, baseName);
         if (!parsed.total) { setStatus(`${file.name}: 0 channels found — skipped`, true); continue; }
-        const plName   = files.length === 1 && name ? name : baseName;
+        const plName   = baseName;
         const pl = {
           id:       String(Date.now()) + "_" + added,
           name:     plName,
