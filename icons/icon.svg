@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="cometGlow" cx="45%" cy="40%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#a78bfa;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0" />
+    </radialGradient>
+    <linearGradient id="tailGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+    </filter>
+  </defs>
+  
+  <!-- Dark background -->
+  <rect width="256" height="256" fill="#0a0a15"/>
+  
+  <!-- Radial glow background -->
+  <circle cx="100" cy="80" r="140" fill="url(#cometGlow)" opacity="0.4"/>
+  
+  <!-- Comet tail (upper left to lower right trajectory) -->
+  <path d="M 80 50 Q 70 80 60 120 Q 50 160 40 200" 
+        stroke="url(#tailGrad)" stroke-width="8" fill="none" 
+        stroke-linecap="round" opacity="0.7" filter="url(#glow)"/>
+  <path d="M 80 50 Q 68 85 55 130 Q 42 175 30 220" 
+        stroke="url(#tailGrad)" stroke-width="5" fill="none" 
+        stroke-linecap="round" opacity="0.4" filter="url(#glow)"/>
+  <path d="M 80 50 Q 92 75 105 110 Q 118 145 130 185" 
+        stroke="url(#tailGrad)" stroke-width="5" fill="none" 
+        stroke-linecap="round" opacity="0.4" filter="url(#glow)"/>
+  
+  <!-- Main comet head (sphere) -->
+  <circle cx="90" cy="50" r="24" fill="#fbbf24" filter="url(#glow)"/>
+  <circle cx="90" cy="50" r="24" fill="none" stroke="#fbbf24" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Inner highlight -->
+  <circle cx="98" cy="42" r="8" fill="#fff" opacity="0.6"/>
+  
+  <!-- Play icon inside comet -->
+  <g transform="translate(90, 50)">
+    <circle r="20" fill="none" stroke="#0a0a15" stroke-width="2"/>
+    <polygon points="-6,-8 -6,8 8,0" fill="#0a0a15"/>
+  </g>
+  
+  <!-- Streaming waves around comet -->
+  <g opacity="0.6" stroke="#a78bfa" stroke-width="1.5" fill="none">
+    <circle cx="90" cy="50" r="34" stroke-dasharray="2,3"/>
+    <circle cx="90" cy="50" r="44" stroke-dasharray="3,2" opacity="0.4"/>
+  </g>
+  
+  <!-- Accent dots (data/signal) -->
+  <circle cx="160" cy="80" r="3" fill="#a78bfa" opacity="0.8"/>
+  <circle cx="175" cy="95" r="2.5" fill="#7c3aed" opacity="0.6"/>
+  <circle cx="150" cy="110" r="2" fill="#a78bfa" opacity="0.4"/>
+  <circle cx="170" cy="130" r="2.5" fill="#7c3aed" opacity="0.5"/>
+</svg>

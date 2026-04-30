@@ -1,0 +1,221 @@
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 380px;
+  min-height: 480px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  background: #0d0d1a;
+  color: #e0e0f0;
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #1a1a2e;
+  border-bottom: 1px solid #2a2a4a;
+}
+.logo { font-weight: 700; font-size: 15px; color: #a78bfa; }
+header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ── Panels ── */
+.panel { padding: 12px 14px; }
+.hidden { display: none !important; }
+
+/* ── Settings ── */
+#panel-settings h2 { margin-bottom: 10px; color: #a78bfa; font-size: 14px; }
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+  color: #9999bb;
+  font-size: 12px;
+}
+label input {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #3a3a5a;
+  background: #1a1a2e;
+  color: #e0e0f0;
+  font-size: 13px;
+  outline: none;
+}
+label input:focus { border-color: #a78bfa; }
+.row { display: flex; gap: 8px; margin-top: 10px; }
+.row button, #btn-back-cats {
+  flex: 1;
+  padding: 7px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+#btn-save { background: #7c3aed; color: #fff; }
+#btn-save:hover { background: #6d28d9; }
+#btn-cancel-settings { background: #2a2a4a; color: #ccc; }
+.error { color: #f87171; font-size: 12px; margin-top: 6px; }
+
+/* ── State message ── */
+.state-msg {
+  text-align: center;
+  color: #5555aa;
+  padding: 40px 20px;
+  font-size: 13px;
+}
+
+/* ── Source type tabs ── */
+#source-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.src-tab {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  background: #1a1a2e;
+  color: #9999bb;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.src-tab.active, .src-tab:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+.hint { font-size: 11px; color: #5555aa; margin-top: 4px; }
+
+/* ── Type tabs ── */
+#type-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  background: #1a1a2e;
+  color: #9999bb;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.tab-btn.active, .tab-btn:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+/* ── Search inputs ── */
+#cat-search, #stream-search {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #3a3a5a;
+  background: #1a1a2e;
+  color: #e0e0f0;
+  font-size: 13px;
+  margin-bottom: 8px;
+  outline: none;
+}
+#cat-search:focus, #stream-search:focus { border-color: #a78bfa; }
+
+/* ── Lists ── */
+ul { list-style: none; max-height: 360px; overflow-y: auto; }
+ul::-webkit-scrollbar { width: 5px; }
+ul::-webkit-scrollbar-track { background: transparent; }
+ul::-webkit-scrollbar-thumb { background: #3a3a5a; border-radius: 3px; }
+
+li {
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.1s;
+}
+li:hover { background: #1e1e38; }
+
+/* Channel logo */
+li .logo {
+  width: 36px; height: 36px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: #2a2a4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+li .logo img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+li .logo.placeholder {
+  font-size: 20px;
+  color: #7c3aed;
+}
+
+li .info {
+  flex: 1;
+  min-width: 0;
+}
+li .name { 
+  font-size: 13px;
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap;
+}
+li .epg {
+  font-size: 11px;
+  color: #6666aa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+li .badge {
+  font-size: 11px;
+  color: #6666aa;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+li .play-btn {
+  font-size: 16px;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+/* ── Back button & count ── */
+#btn-back-cats {
+  background: #2a2a4a;
+  color: #a78bfa;
+  margin-bottom: 8px;
+  font-size: 12px;
+  padding: 5px 10px;
+  flex: unset;
+  width: 100%;
+}
+.count { font-size: 11px; color: #5555aa; margin-bottom: 4px; }
+
+/* ── Loading spinner ── */
+.spinner {
+  display: block;
+  width: 24px; height: 24px;
+  border: 3px solid #3a3a5a;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 30px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nebula IPTV Player</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      color: #e0e0f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Top bar ── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: rgba(0,0,0,0.75);
+      border-bottom: 1px solid #1a1a2e;
+      z-index: 10;
+    }
+    #topbar .logo { color: #a78bfa; font-weight: 700; font-size: 14px; white-space: nowrap; }
+    #stream-title { flex: 1; font-size: 13px; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Video area ── */
+    #video-wrap {
+      flex: 1;
+      position: relative;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* ── Overlay (click to play/pause) ── */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+    }
+    #overlay .big-icon {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 72px;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.2s;
+      pointer-events: none;
+    }
+    #overlay .big-icon.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* ── Controls bar ── */
+    #controls {
+      background: linear-gradient(transparent, rgba(0,0,0,0.92));
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 20px 14px 10px;
+      transition: opacity 0.3s;
+    }
+    #controls.hide { opacity: 0; pointer-events: none; }
+
+    /* Progress */
+    #progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    #time-current, #time-total { font-size: 11px; color: #aaa; white-space: nowrap; min-width: 38px; }
+    #time-total { text-align: right; }
+    #seekbar {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      accent-color: #7c3aed;
+    }
+    #seekbar::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #a78bfa;
+      cursor: pointer;
+    }
+
+    /* Buttons row */
+    #btn-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: #e0e0f0;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: background 0.15s;
+    }
+    .ctrl-btn:hover { background: rgba(255,255,255,0.1); }
+    .ctrl-btn:active { background: rgba(255,255,255,0.2); }
+
+    /* Volume */
+    #vol-wrap { display: flex; align-items: center; gap: 4px; margin-left: 2px; }
+    #volbar {
+      -webkit-appearance: none;
+      width: 72px; height: 4px;
+      background: #333;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      accent-color: #7c3aed;
+    }
+    #volbar::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #a78bfa;
+      cursor: pointer;
+    }
+
+    /* Spacer */
+    .spacer { flex: 1; }
+
+    /* Playback rate badge */
+    #rate-badge {
+      font-size: 11px;
+      background: #2a2a4a;
+      color: #a78bfa;
+      padding: 2px 6px;
+      border-radius: 4px;
+      min-width: 34px;
+      text-align: center;
+    }
+
+    /* ── Error state ── */
+    #error-msg {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      background: rgba(20,0,0,0.85);
+      border: 1px solid #f87171;
+      color: #f87171;
+      padding: 16px 24px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+      z-index: 20;
+    }
+    #error-msg.show { display: block; }
+
+    /* ── Buffering spinner ── */
+    #buffering {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 40px; height: 40px;
+      border: 4px solid rgba(255,255,255,0.15);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+      z-index: 15;
+    }
+    #buffering.show { display: block; }
+    @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top bar ── -->
+  <div id="topbar">
+    <span class="logo">� Nebula IPTV</span>
+    <span id="stream-title">Loading…</span>
+  </div>
+
+  <!-- ── Video area ── -->
+  <div id="video-wrap">
+    <video id="video" preload="auto"></video>
+
+    <!-- Click-to-pause overlay -->
+    <div id="overlay">
+      <span class="big-icon" id="big-icon">⏸</span>
+    </div>
+
+    <!-- Controls -->
+    <div id="controls">
+      <!-- Seek bar -->
+      <div id="progress-wrap">
+        <span id="time-current">0:00</span>
+        <input type="range" id="seekbar" min="0" max="1000" value="0" step="1" />
+        <span id="time-total">0:00</span>
+      </div>
+
+      <!-- Button row -->
+      <div id="btn-row">
+        <!-- Play/Pause -->
+        <button class="ctrl-btn" id="btn-play" title="Play/Pause (Space)">▶</button>
+
+        <!-- Rewind 10s -->
+        <button class="ctrl-btn" id="btn-rw" title="Rewind 10s (←)">⏪</button>
+
+        <!-- Fast forward 10s -->
+        <button class="ctrl-btn" id="btn-ffw" title="Forward 10s (→)">⏩</button>
+
+        <!-- Slower -->
+        <button class="ctrl-btn" id="btn-slower" title="Slower">🐢</button>
+
+        <!-- Speed badge -->
+        <span id="rate-badge">1×</span>
+
+        <!-- Faster -->
+        <button class="ctrl-btn" id="btn-faster" title="Faster">🐇</button>
+
+        <div class="spacer"></div>
+
+        <!-- Volume -->
+        <div id="vol-wrap">
+          <button class="ctrl-btn" id="btn-mute" title="Mute (M)">🔊</button>
+          <input type="range" id="volbar" min="0" max="1" step="0.02" value="1" />
+        </div>
+
+        <!-- Fullscreen -->
+        <button class="ctrl-btn" id="btn-fs" title="Fullscreen (F)">⛶</button>
+      </div>
+    </div>
+
+    <!-- Buffering -->
+    <div id="buffering"></div>
+
+    <!-- Error -->
+    <div id="error-msg" id="error-msg">
+      <div id="error-text">Stream error</div>
+      <div style="margin-top:8px;font-size:12px;color:#888">Try refreshing or check your credentials.</div>
+    </div>
+  </div>
+
+  <!-- HLS.js for m3u8 streams -->
+  <script src="libs/hls.min.js"></script>
+  <script src="player.js"></script>
+</body>
+</html>

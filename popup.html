@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nebula IPTV</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ── Header ── -->
+    <header>
+      <span class="logo">� Nebula IPTV</span>
+      <button id="btn-settings" title="Settings">⚙️</button>
+    </header>
+
+    <!-- ── Settings panel ── -->
+    <section id="panel-settings" class="panel hidden">
+      <h2>Source Settings</h2>
+
+      <!-- Source type toggle -->
+      <div id="source-tabs">
+        <button class="src-tab active" data-src="xtream">Xtream</button>
+        <button class="src-tab" data-src="m3u">M3U URL</button>
+      </div>
+
+      <!-- Xtream fields -->
+      <div id="src-xtream">
+        <label>Server URL
+          <input id="cfg-server" type="url" placeholder="http://your-server:port" />
+        </label>
+        <label>Username
+          <input id="cfg-user" type="text" placeholder="username" />
+        </label>
+        <label>Password
+          <input id="cfg-pass" type="password" placeholder="password" />
+        </label>
+      </div>
+
+      <!-- M3U fields -->
+      <div id="src-m3u" class="hidden">
+        <label>M3U Playlist URL
+          <input id="cfg-m3u" type="url" placeholder="http://example.com/playlist.m3u" />
+        </label>
+        <p class="hint">Supports standard #EXTINF playlists with group-title tags.</p>
+      </div>
+
+      <div class="row">
+        <button id="btn-save">Save &amp; Connect</button>
+        <button id="btn-cancel-settings">Cancel</button>
+      </div>
+      <p id="cfg-error" class="error hidden"></p>
+    </section>
+
+    <!-- ── Browser panel ── -->
+    <section id="panel-browser" class="panel">
+      <div id="browser-state-msg" class="state-msg">Configure server settings to begin.</div>
+
+      <!-- Category tabs -->
+      <div id="type-tabs" class="hidden">
+        <button class="tab-btn active" data-type="live">Live TV</button>
+        <button class="tab-btn" data-type="vod">Movies</button>
+        <button class="tab-btn" data-type="series">Series</button>
+      </div>
+
+      <!-- Category list -->
+      <div id="cat-list-wrap" class="hidden">
+        <input id="cat-search" type="search" placeholder="Search\u2026" />
+        <p id="cache-status" class="count" style="padding:0 2px 4px"></p>
+        <ul id="cat-list"></ul>
+      </div>
+
+      <!-- Channel / stream list -->
+      <div id="stream-list-wrap" class="hidden">
+        <button id="btn-back-cats">← Categories</button>
+        <input id="stream-search" type="search" placeholder="Filter channels…" />
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#5555aa;margin:6px 0;padding:0 10px">
+          <input type="checkbox" id="toggle-epg" style="cursor:pointer" />
+          Show EPG (if available)
+        </label>
+        <p id="stream-count" class="count"></p>
+        <ul id="stream-list"></ul>
+      </div>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
