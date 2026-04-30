@@ -36,6 +36,22 @@ const XtreamAPI = {
     return `${base}/${segment}/${user}/${pass}/${streamId}.${ext}`;
   },
 
+  /* ── Shared fetch with timeout ── */
+  async _fetch(url) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20_000);
+    try {
+      const resp = await fetch(url, { signal: ctrl.signal });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} from server`);
+      return resp.json();
+    } catch (e) {
+      if (e.name === "AbortError") throw new Error("Connection timed out (20s)");
+      throw new Error(`${e.message} — check server URL and credentials`);
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
   /* ── Category endpoints (returns Promise<Array>) ── */
   async fetchCategories(server, user, pass, type) {
     const actionMap = {
@@ -43,10 +59,7 @@ const XtreamAPI = {
       vod:    "get_vod_categories",
       series: "get_series_categories",
     };
-    const url = this.apiUrl(server, user, pass, actionMap[type]);
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return resp.json(); // [{ category_id, category_name, parent_id }, ...]
+    return this._fetch(this.apiUrl(server, user, pass, actionMap[type]));
   },
 
   /* ── Stream list by category ── */
@@ -56,20 +69,12 @@ const XtreamAPI = {
       vod:    "get_vod_streams",
       series: "get_series",
     };
-    const url = this.apiUrl(server, user, pass, actionMap[type], { category_id: categoryId });
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return resp.json();
-    // live/vod items have: stream_id, name, stream_icon, container_extension
-    // series items have:   series_id, name, cover, category_id
+    return this._fetch(this.apiUrl(server, user, pass, actionMap[type], { category_id: categoryId }));
   },
 
   /* ── Series episodes (for a specific series) ── */
   async fetchSeriesInfo(server, user, pass, seriesId) {
-    const url = this.apiUrl(server, user, pass, "get_series_info", { series_id: seriesId });
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return resp.json(); // { info, episodes: { "1": [...], "2": [...] } }
+    return this._fetch(this.apiUrl(server, user, pass, "get_series_info", { series_id: seriesId }));
   },
 };
 
