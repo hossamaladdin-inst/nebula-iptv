@@ -281,6 +281,77 @@ video.addEventListener("error", () => {
   errorMsg.classList.add("show");
 });
 
+const btnTracks   = document.getElementById("btn-tracks");
+const trackPanel  = document.getElementById("track-panel");
+const tpSubLabel  = document.getElementById("tp-sub-label");
+const tpSubList   = document.getElementById("tp-sub-list");
+const tpAudLabel  = document.getElementById("tp-aud-label");
+const tpAudList   = document.getElementById("tp-aud-list");
+
+/* ── Track panel ── */
+function buildTrackPanel() {
+  if (!hls) return;
+
+  const subs  = hls.subtitleTracks || [];
+  const auds  = hls.audioTracks    || [];
+  const hasSub = subs.length > 0;
+  const hasAud = auds.length > 1;   // only show if >1 audio track
+
+  tpSubLabel.style.display = hasSub ? "" : "none";
+  tpAudLabel.style.display = hasAud ? "" : "none";
+  btnTracks.style.display  = (hasSub || hasAud) ? "" : "none";
+
+  // Subtitles
+  tpSubList.innerHTML = "";
+  if (hasSub) {
+    const offBtn = document.createElement("button");
+    offBtn.textContent = "Off";
+    if (hls.subtitleTrack === -1) offBtn.classList.add("active");
+    offBtn.addEventListener("click", () => {
+      hls.subtitleTrack = -1;
+      buildTrackPanel();
+    });
+    tpSubList.appendChild(offBtn);
+    subs.forEach((t, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = t.name || t.lang || `Track ${i + 1}`;
+      if (hls.subtitleTrack === i) btn.classList.add("active");
+      btn.addEventListener("click", () => {
+        hls.subtitleTrack = i;
+        buildTrackPanel();
+      });
+      tpSubList.appendChild(btn);
+    });
+  }
+
+  // Audio
+  tpAudList.innerHTML = "";
+  if (hasAud) {
+    auds.forEach((t, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = t.name || t.lang || `Audio ${i + 1}`;
+      if (hls.audioTrack === i) btn.classList.add("active");
+      btn.addEventListener("click", () => {
+        hls.audioTrack = i;
+        buildTrackPanel();
+      });
+      tpAudList.appendChild(btn);
+    });
+  }
+}
+
+btnTracks.addEventListener("click", (e) => {
+  e.stopPropagation();
+  trackPanel.classList.toggle("show");
+  if (trackPanel.classList.contains("show")) buildTrackPanel();
+});
+
+document.addEventListener("click", (e) => {
+  if (!trackPanel.contains(e.target) && e.target !== btnTracks) {
+    trackPanel.classList.remove("show");
+  }
+});
+
 /* ── HLS.js loader ── */
 let hls = null;
 
@@ -298,6 +369,8 @@ function loadStream(url, name) {
   buffering.classList.add("show");
 
   stopAndRelease();
+  btnTracks.style.display = "none";
+  trackPanel.classList.remove("show");
 
   const isHLS = url.includes(".m3u8") || url.includes("type=m3u8") || url.includes("output=m3u8");
 
@@ -305,7 +378,12 @@ function loadStream(url, name) {
     hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
     hls.loadSource(url);
     hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {});
+      buildTrackPanel();
+    });
+    hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, buildTrackPanel);
+    hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,    buildTrackPanel);
     hls.on(Hls.Events.ERROR, (_e, data) => {
       if (data.fatal) {
         errorText.textContent = `HLS fatal error: ${data.details}`;

@@ -242,6 +242,47 @@
     #sidebar-list li .sb-num  { color: #5555aa; font-size: 10px; min-width: 26px; text-align: right; flex-shrink: 0; }
     #sidebar-list li .sb-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; border-radius: 3px; }
     #sidebar-list li .sb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Track picker panel ── */
+    #track-panel {
+      position: absolute;
+      bottom: 60px;
+      right: 14px;
+      background: rgba(8,8,18,0.96);
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 6px 0;
+      min-width: 180px;
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 40;
+      display: none;
+      backdrop-filter: blur(8px);
+      scrollbar-width: thin;
+      scrollbar-color: #2a2a4a transparent;
+    }
+    #track-panel.show { display: block; }
+    #track-panel .tp-section {
+      padding: 4px 12px 2px;
+      font-size: 10px;
+      color: #5555aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    #track-panel button {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      color: #ccc;
+      text-align: left;
+      padding: 6px 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    #track-panel button:hover { background: #1a1a2e; color: #fff; }
+    #track-panel button.active { color: #a78bfa; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -323,11 +364,22 @@
 
         <!-- Fullscreen -->
         <button class="ctrl-btn" id="btn-fs" title="Fullscreen (F)">⛶</button>
+
+        <!-- Tracks (CC + Audio) -->
+        <button class="ctrl-btn" id="btn-tracks" title="Subtitles &amp; Audio" style="display:none;font-size:14px">CC</button>
       </div>
     </div>
 
     <!-- Buffering -->
     <div id="buffering"></div>
+
+    <!-- Track picker panel -->
+    <div id="track-panel">
+      <div class="tp-section" id="tp-sub-label" style="display:none">Subtitles</div>
+      <div id="tp-sub-list"></div>
+      <div class="tp-section" id="tp-aud-label" style="display:none">Audio</div>
+      <div id="tp-aud-list"></div>
+    </div>
 
     <!-- Error -->
     <div id="error-msg" id="error-msg">
