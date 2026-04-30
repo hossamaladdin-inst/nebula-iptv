@@ -32,9 +32,11 @@ const sidebarList     = document.getElementById("sidebar-list");
 const plLabel         = document.getElementById("pl-label");
 const plCount         = document.getElementById("pl-count");
 
-/* ── Playlist state ── */
-let playlist   = [];   // [{ url, name, logo? }]
-let currentIdx = 0;
+/* ── Playlist + category state ── */
+let playlist    = [];   // [{ url, name, logo? }]
+let currentIdx  = 0;
+let categories  = null; // [{name, streams:[{url,name,logo}]}] or null
+let sidebarMode = "streams"; // "streams" | "categories"
 
 /* ── Rates cycle ── */
 const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4];
@@ -97,6 +99,47 @@ function escHtml(s) {
 }
 
 function renderSidebar(filterVal = "") {
+  if (sidebarMode === "categories" && categories) {
+    renderCategoriesSidebar(filterVal);
+  } else {
+    renderStreamsSidebar(filterVal);
+  }
+}
+
+function renderCategoriesSidebar(filterVal = "") {
+  const q = filterVal.toLowerCase();
+  const items = q ? categories.filter(c => c.name.toLowerCase().includes(q)) : categories;
+
+  plLabel.textContent = "Categories";
+  plCount.textContent = `${categories.length}`;
+  btnSidebarCats.style.display = "none";
+  btnSidebarBack.style.display = "none";
+  sidebarList.innerHTML = "";
+  sidebarSearch.placeholder = "Filter categories…";
+
+  if (!items.length) {
+    sidebarList.innerHTML = '<li style="color:#5555aa;cursor:default;padding:10px 14px">No results</li>';
+    return;
+  }
+  for (const cat of items) {
+    const li = document.createElement("li");
+    li.innerHTML =
+      `<span class="sb-num">${cat.streams.length}</span>` +
+      `<span class="sb-name">${escHtml(cat.name)}</span>` +
+      `<span style="color:#5555aa;font-size:10px;flex-shrink:0">›</span>`;
+    li.addEventListener("click", () => {
+      // load this category's streams as current playlist
+      playlist = cat.streams;
+      currentIdx = 0;
+      sidebarMode = "streams";
+      renderSidebar(sidebarSearch.value);
+      updatePlPos();
+    });
+    sidebarList.appendChild(li);
+  }
+}
+
+function renderStreamsSidebar(filterVal = "") {
   const q = filterVal.toLowerCase();
   const items = playlist
     .map((p, i) => ({ ...p, _i: i }))
@@ -104,6 +147,9 @@ function renderSidebar(filterVal = "") {
 
   plLabel.textContent = "Playlist";
   plCount.textContent = playlist.length ? `${playlist.length} items` : "";
+  btnSidebarCats.style.display = categories ? "" : "none";
+  btnSidebarBack.style.display = "none";
+  sidebarSearch.placeholder = "Filter…";
   sidebarList.innerHTML = "";
 
   if (!items.length) {
@@ -128,6 +174,18 @@ function renderSidebar(filterVal = "") {
 }
 
 sidebarSearch.addEventListener("input", () => renderSidebar(sidebarSearch.value));
+
+btnSidebarCats.addEventListener("click", () => {
+  sidebarMode = "categories";
+  sidebarSearch.value = "";
+  renderSidebar();
+});
+
+btnSidebarBack.addEventListener("click", () => {
+  sidebarMode = "categories";
+  sidebarSearch.value = "";
+  renderSidebar();
+});
 
 /* ══════════════════════════════════════════════════
    Playlist navigation
@@ -303,12 +361,14 @@ video.addEventListener("error", () => {
   errorMsg.classList.add("show");
 });
 
-const btnTracks   = document.getElementById("btn-tracks");
-const trackPanel  = document.getElementById("track-panel");
-const tpSubLabel  = document.getElementById("tp-sub-label");
-const tpSubList   = document.getElementById("tp-sub-list");
-const tpAudLabel  = document.getElementById("tp-aud-label");
-const tpAudList   = document.getElementById("tp-aud-list");
+const btnTracks         = document.getElementById("btn-tracks");
+const trackPanel        = document.getElementById("track-panel");
+const tpSubLabel        = document.getElementById("tp-sub-label");
+const tpSubList         = document.getElementById("tp-sub-list");
+const tpAudLabel        = document.getElementById("tp-aud-label");
+const tpAudList         = document.getElementById("tp-aud-list");
+const btnSidebarCats    = document.getElementById("btn-sidebar-cats");
+const btnSidebarBack    = document.getElementById("btn-sidebar-back");
 
 /* ── Track panel ── */
 function buildTrackPanel() {
@@ -444,12 +504,17 @@ window.addEventListener("beforeunload", stopAndRelease);
    Boot: load stream + playlist from storage
 ════════════════════════════════════════════════════ */
 (async () => {
-  const stored = await chrome.storage.local.get(["playerPlaylist", "playerIdx", "lastStream"]);
+  const stored = await chrome.storage.local.get(["playerPlaylist", "playerIdx", "lastStream", "playerCategories"]);
 
   // Load playlist
   if (Array.isArray(stored.playerPlaylist) && stored.playerPlaylist.length) {
     playlist   = stored.playerPlaylist;
     currentIdx = typeof stored.playerIdx === "number" ? stored.playerIdx : 0;
+  }
+
+  // Load categories if available
+  if (Array.isArray(stored.playerCategories) && stored.playerCategories.length) {
+    categories = stored.playerCategories;
   }
 
   // Determine what to play
@@ -481,7 +546,7 @@ window.addEventListener("beforeunload", stopAndRelease);
   updatePlPos();
 
   // Briefly show sidebar on first load so user knows it exists
-  if (playlist.length > 1) {
+  if (playlist.length > 1 || categories) {
     showSidebar();
     sidebarTimer = setTimeout(() => sidebar.classList.remove("show"), 3000);
   }

@@ -308,9 +308,12 @@ async function playOrBrowse(stream) {
   const currentIdx = Math.max(0, playlist.findIndex(p => p.url === streamUrl));
 
   await chrome.storage.local.set({
-    lastStream:     { url: streamUrl, name: stream.name || stream.title },
-    playerPlaylist: playlist,
-    playerIdx:      currentIdx,
+    lastStream:       { url: streamUrl, name: stream.name || stream.title },
+    playerPlaylist:   playlist,
+    playerIdx:        currentIdx,
+    playerCategories: (state.sourceType === "m3u" || state.sourceType === "file")
+                        ? state.m3uGroups.map(g => ({ name: g.name, streams: g.streams.map(s => ({ url: buildStreamUrl(s), name: s.name, logo: s.logo || s.stream_icon || "" })) }))
+                        : null,
   });
   chrome.runtime.sendMessage({ action: "openPlayer", url: streamUrl, name: stream.name || stream.title });
 }

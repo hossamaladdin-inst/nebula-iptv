@@ -212,10 +212,20 @@
     #sidebar-header {
       padding: 10px 14px 8px;
       border-bottom: 1px solid #1a1a2e;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
-    #pl-label { color: #a78bfa; font-weight: 700; font-size: 13px; }
-    #pl-count  { color: #5555aa; font-size: 11px; }
+    #pl-label { color: #a78bfa; font-weight: 700; font-size: 13px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #pl-count  { color: #5555aa; font-size: 11px; white-space: nowrap; }
+    #btn-sidebar-cats {
+      background: none; border: 1px solid #2a2a4a; color: #a78bfa;
+      font-size: 10px; padding: 2px 7px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+    }
+    #btn-sidebar-cats:hover { background: #1a1a2e; }
+    #btn-sidebar-back {
+      background: none; border: none; color: #7c7ccc; font-size: 11px;
+      padding: 4px 14px 2px; cursor: pointer; text-align: left; width: 100%;
+    }
+    #btn-sidebar-back:hover { color: #a78bfa; }
     #sidebar-search {
       margin: 8px 10px 4px;
       background: #0d0d1a;
@@ -308,7 +318,9 @@
       <div id="sidebar-header">
         <span id="pl-label">Playlist</span>
         <span id="pl-count"></span>
+        <button id="btn-sidebar-cats" title="Browse categories" style="display:none">⊞ Categories</button>
       </div>
+      <button id="btn-sidebar-back" style="display:none">← Back to categories</button>
       <input id="sidebar-search" type="search" placeholder="Filter…" />
       <ul id="sidebar-list"></ul>
     </div>
