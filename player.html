@@ -11,29 +11,31 @@
       color: #e0e0f0;
       font-family: 'Segoe UI', system-ui, sans-serif;
       height: 100vh;
-      display: flex;
-      flex-direction: column;
       overflow: hidden;
       user-select: none;
+      position: relative;
     }
 
     /* ── Top bar ── */
     #topbar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 8px 14px;
-      background: rgba(0,0,0,0.75);
-      border-bottom: 1px solid #1a1a2e;
+      background: linear-gradient(rgba(0,0,0,0.85), transparent);
       z-index: 10;
+      transition: opacity 0.3s;
     }
+    #topbar.hide { opacity: 0; pointer-events: none; }
     #topbar .logo { color: #a78bfa; font-weight: 700; font-size: 14px; white-space: nowrap; }
     #stream-title { flex: 1; font-size: 13px; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* ── Video area ── */
     #video-wrap {
-      flex: 1;
-      position: relative;
+      position: absolute;
+      inset: 0;
       background: #000;
       display: flex;
       align-items: center;

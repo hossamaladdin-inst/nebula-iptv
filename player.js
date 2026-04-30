@@ -44,11 +44,17 @@ let rateIdx = RATES.indexOf(1);
    Auto-hide controls
 ══════════════════════════════════════════════════ */
 let hideTimer = null;
+const topbar = document.getElementById("topbar");
+
 function resetHideTimer() {
   controls.classList.remove("hide");
+  topbar.classList.remove("hide");
   clearTimeout(hideTimer);
   hideTimer = setTimeout(() => {
-    if (!video.paused) controls.classList.add("hide");
+    if (!video.paused) {
+      controls.classList.add("hide");
+      topbar.classList.add("hide");
+    }
   }, 3000);
 }
 document.addEventListener("mousemove", resetHideTimer);
@@ -216,7 +222,7 @@ overlay.addEventListener("click", () => {
 btnPlay.addEventListener("click", togglePlay);
 
 video.addEventListener("play",  () => { btnPlay.textContent = "⏸"; resetHideTimer(); });
-video.addEventListener("pause", () => { btnPlay.textContent = "▶"; controls.classList.remove("hide"); clearTimeout(hideTimer); });
+video.addEventListener("pause", () => { btnPlay.textContent = "▶"; controls.classList.remove("hide"); topbar.classList.remove("hide"); clearTimeout(hideTimer); });
 
 function flashIcon(icon) {
   bigIcon.textContent = icon;
@@ -250,6 +256,19 @@ btnFs.addEventListener("click", () => {
   }
 });
 
+/* ── Subtitle cycle (S) ── */
+function cycleSubtitle() {
+  if (!hls) return;
+  const subs = hls.subtitleTracks || [];
+  if (!subs.length) return;
+  // -1 = off, 0..n-1 = tracks; cycle: off → 0 → 1 → … → off
+  const next = hls.subtitleTrack + 1;
+  hls.subtitleTrack = next >= subs.length ? -1 : next;
+  const label = hls.subtitleTrack === -1 ? "Subs: Off" : (subs[hls.subtitleTrack].name || subs[hls.subtitleTrack].lang || `Sub ${hls.subtitleTrack + 1}`);
+  flashIcon(label);
+  buildTrackPanel();
+}
+
 /* ── Keyboard shortcuts ── */
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
@@ -266,6 +285,7 @@ document.addEventListener("keydown", e => {
     case "[": prevStream(); flashIcon("\u23ee"); break;
     case "]": nextStream(); flashIcon("\u23ed"); break;
     case "l": case "L": toggleSidebar(); break;
+    case "s": case "S": cycleSubtitle(); break;
   }
 });
 
