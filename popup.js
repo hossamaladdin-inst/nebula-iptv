@@ -455,7 +455,8 @@ function showPlaylistForm(pl = null) {
   state.formSrcType = srcType;
   document.querySelectorAll(".src-tab").forEach(b => b.classList.toggle("active", b.dataset.src === srcType));
   $("src-xtream").classList.toggle("hidden", srcType !== "xtream");
-  $("src-m3u").classList.toggle("hidden", srcType !== "m3u");
+  $("src-m3u").classList.toggle("hidden",    srcType !== "m3u");
+  $("src-file").classList.toggle("hidden",   srcType !== "file");
   if (pl && pl.type === "xtream") {
     $("cfg-server").value = pl.server || "";
     $("cfg-user").value   = pl.user   || "";
@@ -472,6 +473,7 @@ function showPlaylistForm(pl = null) {
     $("cfg-pass").value   = "";
     $("cfg-m3u").value    = "";
   }
+  if ($("cfg-file")) $("cfg-file").value = "";
   hideError();
 }
 
@@ -484,12 +486,94 @@ function hidePlaylistForm() {
 $("btn-add-playlist").addEventListener("click", () => showPlaylistForm());
 $("btn-cancel-form").addEventListener("click", hidePlaylistForm);
 
+/* ═══════════════════════════════════════════════════
+   Local M3U file parser (FileReader — no network needed)
+═══════════════════════════════════════════════════ */
+function parseM3UText(text) {
+  const lines = text.split(/\r?\n/);
+  const channels = [];
+  let current = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith("#EXTINF")) {
+      const name       = line.replace(/^#EXTINF[^,]*,/, "").trim();
+      const groupMatch = line.match(/group-title="([^"]*)"/i);
+      const logoMatch  = line.match(/tvg-logo="([^"]*)"/i);
+      current = {
+        name:  name || "Unnamed",
+        group: groupMatch ? groupMatch[1].trim() : "Uncategorized",
+        logo:  logoMatch  ? logoMatch[1]  : "",
+      };
+    } else if (line && !line.startsWith("#") && current) {
+      current.url = line;
+      channels.push(current);
+      current = null;
+    }
+  }
+  const map = {};
+  for (const ch of channels) {
+    if (!map[ch.group]) map[ch.group] = [];
+    map[ch.group].push(ch);
+  }
+  const groups = Object.keys(map).sort().map(g => ({
+    category_id: g, category_name: g, streams: map[g],
+  }));
+  return { groups, total: channels.length };
+}
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+    reader.readAsText(file);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   Save button — handles xtream / m3u URL / m3u file(s)
+═══════════════════════════════════════════════════ */
 $("btn-save").addEventListener("click", async () => {
   hideError();
-  const name = $("cfg-name").value.trim() || "Playlist";
+  const name    = $("cfg-name").value.trim() || "Playlist";
   const srcType = state.formSrcType;
-  let pl;
 
+  // ── M3U File(s) ──────────────────────────────────
+  if (srcType === "file") {
+    const files = Array.from($("cfg-file").files || []);
+    if (!files.length) { setStatus("Please select at least one .m3u file.", true); return; }
+    let added = 0;
+    for (const file of files) {
+      try {
+        const text    = await readFileAsText(file);
+        const parsed  = parseM3UText(text);
+        if (!parsed.total) { setStatus(`${file.name}: 0 channels found — skipped`, true); continue; }
+        const baseName = file.name.replace(/\.m3u8?$/i, "");
+        const plName   = files.length === 1 && name ? name : baseName;
+        const pl = {
+          id:       String(Date.now()) + "_" + added,
+          name:     plName,
+          type:     "file",
+          m3uGroups: parsed.groups,
+          total:    parsed.total,
+        };
+        state.playlists.push(pl);
+        added++;
+      } catch (e) {
+        setStatus(`Error reading ${file.name}: ${e.message}`, true);
+      }
+    }
+    if (!added) return;
+    await savePlaylists();
+    renderPlaylistList();
+    hidePlaylistForm();
+    setStatus(`✓ ${added} playlist(s) imported`);
+    if (state.playlists.length === added) activatePlaylist(state.playlists[0].id);
+    return;
+  }
+
+  // ── M3U URL ──────────────────────────────────────
+  let pl;
   if (srcType === "m3u") {
     const raw = $("cfg-m3u").value.trim();
     if (!raw) { setStatus("Please enter a URL.", true); return; }
@@ -500,6 +584,7 @@ $("btn-save").addEventListener("click", async () => {
       pl = { id: state.editingPl || String(Date.now()), name, type: "m3u", m3uUrl: raw };
     }
   } else {
+    // ── Xtream ───────────────────────────────────────
     const server = $("cfg-server").value.trim();
     const user   = $("cfg-user").value.trim();
     const pass   = $("cfg-pass").value.trim();
@@ -513,7 +598,6 @@ $("btn-save").addEventListener("click", async () => {
   await savePlaylists();
   renderPlaylistList();
   hidePlaylistForm();
-  // Auto-activate if first playlist or editing the active one
   if (state.playlists.length === 1 || state.activePl === pl.id) {
     activatePlaylist(pl.id);
   }
@@ -522,6 +606,13 @@ $("btn-save").addEventListener("click", async () => {
 async function activatePlaylist(id) {
   const pl = state.playlists.find(p => p.id === id);
   if (!pl) return;
+
+  // Close any existing player stream before switching
+  if (state.activePl && state.activePl !== id) {
+    chrome.runtime.sendMessage({ action: "closeStream" });
+    await new Promise(r => setTimeout(r, 300)); // brief pause so server releases the slot
+  }
+
   state.activePl = id;
   await chrome.storage.local.set({ activePl: id });
   state.sourceType = pl.type;
@@ -539,7 +630,11 @@ async function activatePlaylist(id) {
   panelSettings.classList.add("hidden");
   panelBrowser.classList.remove("hidden");
 
-  if (pl.type === "m3u") {
+  if (pl.type === "file") {
+    // Groups are stored inline — no fetch needed
+    state.m3uGroups = pl.m3uGroups || [];
+    launchBrowser("m3u");
+  } else if (pl.type === "m3u") {
     setStatus("⏳ Loading playlist…");
     // Check storage cache first (5 min TTL)
     const stored = await chrome.storage.local.get(["m3uResult", "m3uResultTs", "m3uUrl"]);
@@ -567,8 +662,14 @@ async function deletePlaylist(id) {
   await savePlaylists();
   if (state.activePl === id) {
     state.activePl = null;
-    await chrome.storage.local.remove("activePl");
+    await chrome.storage.local.remove(["activePl", "streamCache_live", "streamCache_vod", "streamCache_series",
+                                       "m3uResult", "m3uResultTs", "m3uUrl"]);
     $("active-playlist-name").textContent = "";
+    // Kill the player tab and stop the stream
+    chrome.runtime.sendMessage({ action: "closeStream" });
+    // Return to settings panel
+    panelBrowser.classList.add("hidden");
+    panelSettings.classList.remove("hidden");
   }
   renderPlaylistList();
 }
@@ -589,7 +690,7 @@ function launchBrowser(mode) {
 }
 
 /* ═══════════════════════════════════════════════════
-   Source type tabs inside the add/edit form (Xtream / M3U)
+   Source type tabs inside the add/edit form (Xtream / M3U / File)
 ═══════════════════════════════════════════════════ */
 document.querySelectorAll(".src-tab").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -598,6 +699,7 @@ document.querySelectorAll(".src-tab").forEach(btn => {
     state.formSrcType = btn.dataset.src;
     $("src-xtream").classList.toggle("hidden", state.formSrcType !== "xtream");
     $("src-m3u").classList.toggle("hidden",    state.formSrcType !== "m3u");
+    $("src-file").classList.toggle("hidden",   state.formSrcType !== "file");
     hideError();
   });
 });
