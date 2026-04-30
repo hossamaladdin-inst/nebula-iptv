@@ -352,6 +352,18 @@ document.addEventListener("click", (e) => {
   }
 });
 
+/* ── Mouse wheel volume ── */
+document.addEventListener("wheel", (e) => {
+  if (trackPanel.classList.contains("show")) return; // don't conflict with panel scroll
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 0.05 : -0.05;
+  video.volume = Math.min(1, Math.max(0, video.volume + delta));
+  video.muted  = video.volume === 0;
+  volbar.value = video.volume;
+  updateMuteIcon();
+  flashIcon(video.muted ? "🔇" : video.volume < 0.5 ? "🔉" : "🔊");
+}, { passive: false });
+
 /* ── HLS.js loader ── */
 let hls = null;
 
