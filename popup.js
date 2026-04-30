@@ -431,14 +431,20 @@ async function savePlaylists() {
   await chrome.storage.local.set({ playlists: state.playlists });
 }
 
-function renderPlaylistList() {
+function renderPlaylistList(filterVal) {
+  const q = (filterVal !== undefined ? filterVal : ($('playlist-search') ? $('playlist-search').value : '')).toLowerCase().trim();
   const ul = $("playlist-list");
   ul.innerHTML = "";
+  const visible = q ? state.playlists.filter(pl => pl.name.toLowerCase().includes(q)) : state.playlists;
   if (!state.playlists.length) {
     ul.innerHTML = '<li style="color:#5555aa;cursor:default;font-size:12px;padding:6px 0">No playlists yet. Add one below.</li>';
     return;
   }
-  for (const pl of state.playlists) {
+  if (!visible.length) {
+    ul.innerHTML = '<li style="color:#5555aa;cursor:default;font-size:12px;padding:6px 0">No matches.</li>';
+    return;
+  }
+  for (const pl of visible) {
     const li = document.createElement("li");
     li.className = pl.id === state.activePl ? "active-pl" : "";
     li.innerHTML = `<span class="pl-name">${escHtml(pl.name)}</span>` +
@@ -490,6 +496,7 @@ function hidePlaylistForm() {
 
 $("btn-add-playlist").addEventListener("click", () => showPlaylistForm());
 $("btn-cancel-form").addEventListener("click", hidePlaylistForm);
+$("playlist-search").addEventListener("input", () => renderPlaylistList());
 
 /* ═══════════════════════════════════════════════════
    Local M3U file parser (FileReader — no network needed)
