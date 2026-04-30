@@ -312,7 +312,7 @@ async function playOrBrowse(stream) {
     playerPlaylist:   playlist,
     playerIdx:        currentIdx,
     playerCategories: (state.sourceType === "m3u" || state.sourceType === "file")
-                        ? state.m3uGroups.map(g => ({ name: g.name, streams: g.streams.map(s => ({ url: buildStreamUrl(s), name: s.name, logo: s.logo || s.stream_icon || "" })) }))
+                        ? state.m3uGroups.map(g => ({ name: g.category_name || g.name || g.category_id || "Unnamed", streams: g.streams.map(s => ({ url: buildStreamUrl(s), name: s.name || s.title || "", logo: s.logo || s.stream_icon || "" })) }))
                         : null,
   });
   chrome.runtime.sendMessage({ action: "openPlayer", url: streamUrl, name: stream.name || stream.title });
