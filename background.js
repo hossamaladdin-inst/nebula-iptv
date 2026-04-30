@@ -84,7 +84,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         chrome.tabs.remove(playerTabId, () => { chrome.runtime.lastError; });
       }
     });
-    chrome.storage.local.remove(["playerTabId", "lastStream", "playerPlaylist", "playerIdx", "playerCategories"]);
+    chrome.storage.local.remove(["playerTabId", "lastStream", "playerPlaylist", "playerIdx"]);
     return false;
   }
 
@@ -106,7 +106,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   chrome.storage.local.get("playerTabId", ({ playerTabId }) => {
     if (tabId === playerTabId) {
-      chrome.storage.local.remove(["playerTabId", "lastStream", "playerPlaylist", "playerIdx", "playerCategories"]);
+      chrome.storage.local.remove(["playerTabId", "lastStream", "playerPlaylist", "playerIdx"]);
     }
   });
 });

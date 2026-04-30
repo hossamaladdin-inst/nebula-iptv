@@ -35,10 +35,22 @@ const btnSidebarCats  = document.getElementById("btn-sidebar-cats");
 const btnSidebarBack  = document.getElementById("btn-sidebar-back");
 
 /* ── Playlist + category state ── */
-let playlist    = [];   // [{ url, name, logo? }]
-let currentIdx  = 0;
-let categories  = null; // [{name, streams:[{url,name,logo}]}] or null
-let sidebarMode = "streams"; // "streams" | "categories"
+let playlist           = [];   // [{ url, name, logo, category? }]
+let currentIdx         = 0;
+let categories         = null; // [{name, streams}] derived from playlist
+let sidebarMode        = "streams"; // "streams" | "categories"
+let activeCategoryName = null; // name of the category currently loaded in streams view
+
+function deriveCategories(pl) {
+  const map = new Map();
+  for (const s of pl) {
+    if (!s.category) continue;
+    if (!map.has(s.category)) map.set(s.category, []);
+    map.get(s.category).push(s);
+  }
+  if (!map.size) return null;
+  return Array.from(map.entries()).map(([name, streams]) => ({ name, streams }));
+}
 
 /* ── Rates cycle ── */
 const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4];
@@ -125,20 +137,25 @@ function renderCategoriesSidebar(filterVal = "") {
   }
   for (const cat of items) {
     const li = document.createElement("li");
+    if (cat.name === activeCategoryName) li.classList.add("active");
     li.innerHTML =
       `<span class="sb-num">${cat.streams.length}</span>` +
       `<span class="sb-name">${escHtml(cat.name)}</span>` +
       `<span style="color:#5555aa;font-size:10px;flex-shrink:0">›</span>`;
-    li.addEventListener("click", () => {
-      // load this category's streams as current playlist
-      playlist = cat.streams;
+    li.addEventListener("click", async () => {
+      activeCategoryName = cat.name;
+      playlist   = cat.streams;
       currentIdx = 0;
       sidebarMode = "streams";
+      await chrome.storage.local.set({ playerPlaylist: cat.streams, playerIdx: 0 });
       renderSidebar(sidebarSearch.value);
       updatePlPos();
     });
     sidebarList.appendChild(li);
   }
+  // Scroll active category into view
+  const active = sidebarList.querySelector("li.active");
+  if (active) active.scrollIntoView({ block: "nearest" });
 }
 
 function renderStreamsSidebar(filterVal = "") {
@@ -147,10 +164,11 @@ function renderStreamsSidebar(filterVal = "") {
     .map((p, i) => ({ ...p, _i: i }))
     .filter(p => !q || p.name.toLowerCase().includes(q));
 
-  plLabel.textContent = "Playlist";
+  plLabel.textContent = activeCategoryName || "Playlist";
   plCount.textContent = playlist.length ? `${playlist.length} items` : "";
   btnSidebarCats.style.display = categories ? "" : "none";
-  btnSidebarBack.style.display = "none";
+  btnSidebarBack.style.display = (categories && activeCategoryName) ? "" : "none";
+  if (activeCategoryName) btnSidebarBack.textContent = `← All categories`;
   sidebarSearch.placeholder = "Filter…";
   sidebarList.innerHTML = "";
 
@@ -202,6 +220,7 @@ function navigateTo(idx) {
   if (idx < 0 || idx >= playlist.length) return;
   currentIdx = idx;
   const item = playlist[idx];
+  if (item.category) activeCategoryName = item.category;
   loadStream(item.url, item.name);
   chrome.storage.local.set({ playerIdx: idx, lastStream: { url: item.url, name: item.name } });
   renderSidebar(sidebarSearch.value);
@@ -504,7 +523,7 @@ window.addEventListener("beforeunload", stopAndRelease);
    Boot: load stream + playlist from storage
 ════════════════════════════════════════════════════ */
 (async () => {
-  const stored = await chrome.storage.local.get(["playerPlaylist", "playerIdx", "lastStream", "playerCategories"]);
+  const stored = await chrome.storage.local.get(["playerPlaylist", "playerIdx", "lastStream"]);
 
   // Load playlist
   if (Array.isArray(stored.playerPlaylist) && stored.playerPlaylist.length) {
@@ -512,9 +531,12 @@ window.addEventListener("beforeunload", stopAndRelease);
     currentIdx = typeof stored.playerIdx === "number" ? stored.playerIdx : 0;
   }
 
-  // Load categories if available
-  if (Array.isArray(stored.playerCategories) && stored.playerCategories.length) {
-    categories = stored.playerCategories;
+  // Derive categories from playlist streams that have a category field
+  categories = deriveCategories(playlist);
+
+  // Restore active category name from current stream
+  if (categories && playlist[currentIdx]?.category) {
+    activeCategoryName = playlist[currentIdx].category;
   }
 
   // Determine what to play

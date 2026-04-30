@@ -308,12 +308,22 @@ async function playOrBrowse(stream) {
   const currentIdx = Math.max(0, playlist.findIndex(p => p.url === streamUrl));
 
   await chrome.storage.local.set({
-    lastStream:       { url: streamUrl, name: stream.name || stream.title },
-    playerPlaylist:   playlist,
-    playerIdx:        currentIdx,
-    playerCategories: (state.sourceType === "m3u" || state.sourceType === "file")
-                        ? state.m3uGroups.map(g => ({ name: g.category_name || g.name || g.category_id || "Unnamed", streams: g.streams.map(s => ({ url: buildStreamUrl(s), name: s.name || s.title || "", logo: s.logo || s.stream_icon || "" })) }))
-                        : null,
+    lastStream:     { url: streamUrl, name: stream.name || stream.title },
+    playerPlaylist: (state.sourceType === "m3u" || state.sourceType === "file")
+      ? state.m3uGroups.flatMap(g => g.streams.map(s => ({
+          url:      buildStreamUrl(s),
+          name:     s.name || s.title || "",
+          logo:     s.logo || s.stream_icon || "",
+          category: g.category_name || g.name || g.category_id || "",
+        })))
+      : playlist,
+    playerIdx: (state.sourceType === "m3u" || state.sourceType === "file")
+      ? (() => {
+          const allStreams = state.m3uGroups.flatMap(g => g.streams.map(s => buildStreamUrl(s)));
+          const idx = allStreams.indexOf(streamUrl);
+          return idx >= 0 ? idx : currentIdx;
+        })()
+      : currentIdx,
   });
   chrome.runtime.sendMessage({ action: "openPlayer", url: streamUrl, name: stream.name || stream.title });
 }
