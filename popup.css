@@ -34,6 +34,36 @@ header button {
 
 /* ── Settings ── */
 #panel-settings h2 { margin-bottom: 10px; color: #a78bfa; font-size: 14px; }
+
+/* Saved playlists */
+#playlist-list { max-height: 180px; overflow-y: auto; margin-bottom: 8px; }
+#playlist-list li {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 8px; border-radius: 6px; cursor: pointer;
+}
+#playlist-list li:hover { background: #1e1e38; }
+#playlist-list li.active-pl { background: #1e1e38; border-left: 3px solid #7c3aed; }
+#playlist-list li .pl-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#playlist-list li .pl-type { font-size: 10px; color: #5555aa; background: #2a2a4a; padding: 1px 5px; border-radius: 3px; }
+#playlist-list li .pl-connect { font-size: 11px; color: #7c3aed; font-weight: 700; padding: 2px 6px; }
+#playlist-list li .pl-delete { font-size: 13px; color: #5555aa; margin-left: 2px; }
+#playlist-list li .pl-delete:hover { color: #f87171; }
+
+#add-playlist-wrap { margin-bottom: 8px; }
+#btn-add-playlist {
+  width: 100%; padding: 7px; border: 1px dashed #3a3a5a;
+  border-radius: 6px; background: none; color: #7c3aed;
+  cursor: pointer; font-size: 13px; font-weight: 600;
+}
+#btn-add-playlist:hover { background: #1a1a2e; }
+
+#playlist-form { padding-top: 4px; }
+#cfg-name {
+  width: 100%; padding: 6px 8px; margin-bottom: 8px;
+  border-radius: 6px; border: 1px solid #3a3a5a;
+  background: #1a1a2e; color: #e0e0f0; font-size: 13px; outline: none;
+}
+#cfg-name:focus { border-color: #a78bfa; }
 label {
   display: flex;
   flex-direction: column;

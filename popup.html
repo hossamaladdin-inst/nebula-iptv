@@ -10,49 +10,60 @@
     <!-- ── Header ── -->
     <header>
       <span class="logo">� Nebula IPTV</span>
-      <button id="btn-settings" title="Settings">⚙️</button>
+      <span id="active-playlist-name" style="flex:1;font-size:11px;color:#6666aa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 8px;text-align:right"></span>
+      <button id="btn-settings" title="Playlists">⚙️</button>
     </header>
 
     <!-- ── Settings panel ── -->
-    <section id="panel-settings" class="panel hidden">
-      <h2>Source Settings</h2>
+    <section id="panel-settings" class="panel">
+      <h2>Playlists</h2>
 
-      <!-- Source type toggle -->
-      <div id="source-tabs">
-        <button class="src-tab active" data-src="xtream">Xtream</button>
-        <button class="src-tab" data-src="m3u">M3U URL</button>
+      <!-- Saved playlists list -->
+      <ul id="playlist-list"></ul>
+
+      <!-- Add new -->
+      <div id="add-playlist-wrap">
+        <button id="btn-add-playlist">＋ Add Playlist</button>
       </div>
 
-      <!-- Xtream fields -->
-      <div id="src-xtream">
-        <label>Server URL
-          <input id="cfg-server" type="url" placeholder="http://your-server:port" />
-        </label>
-        <label>Username
-          <input id="cfg-user" type="text" placeholder="username" />
-        </label>
-        <label>Password
-          <input id="cfg-pass" type="password" placeholder="password" />
-        </label>
-      </div>
+      <!-- Add/Edit form -->
+      <div id="playlist-form" class="hidden">
+        <input id="cfg-name" type="text" placeholder="Playlist name (e.g. My IPTV)" />
 
-      <!-- M3U fields -->
-      <div id="src-m3u" class="hidden">
-        <label>M3U Playlist URL
-          <input id="cfg-m3u" type="url" placeholder="http://example.com/playlist.m3u" />
-        </label>
-        <p class="hint">Supports standard #EXTINF playlists with group-title tags.</p>
-      </div>
+        <div id="source-tabs">
+          <button class="src-tab active" data-src="xtream">Xtream</button>
+          <button class="src-tab" data-src="m3u">M3U URL</button>
+        </div>
 
-      <div class="row">
-        <button id="btn-save">Save &amp; Connect</button>
-        <button id="btn-cancel-settings">Cancel</button>
+        <div id="src-xtream">
+          <label>Server URL
+            <input id="cfg-server" type="url" placeholder="http://your-server:port" />
+          </label>
+          <label>Username
+            <input id="cfg-user" type="text" placeholder="username" />
+          </label>
+          <label>Password
+            <input id="cfg-pass" type="password" placeholder="password" />
+          </label>
+        </div>
+
+        <div id="src-m3u" class="hidden">
+          <label>M3U / Xtream URL
+            <input id="cfg-m3u" type="url" placeholder="http://server/get.php?username=…" />
+          </label>
+          <p class="hint">Xtream get.php URLs are auto-detected and use the API directly.</p>
+        </div>
+
+        <div class="row">
+          <button id="btn-save">Save</button>
+          <button id="btn-cancel-form">Cancel</button>
+        </div>
+        <p id="cfg-error" class="error hidden"></p>
       </div>
-      <p id="cfg-error" class="error hidden"></p>
     </section>
 
     <!-- ── Browser panel ── -->
-    <section id="panel-browser" class="panel">
+    <section id="panel-browser" class="panel hidden">
       <div id="browser-state-msg" class="state-msg">Configure server settings to begin.</div>
 
       <!-- Category tabs -->
