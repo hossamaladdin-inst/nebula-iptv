@@ -284,13 +284,20 @@ video.addEventListener("error", () => {
 /* ── HLS.js loader ── */
 let hls = null;
 
+function stopAndRelease() {
+  video.pause();
+  if (hls) { hls.destroy(); hls = null; }
+  video.removeAttribute("src");
+  video.load(); // abort any pending network request
+}
+
 function loadStream(url, name) {
   titleEl.textContent = name || url;
   document.title      = name || "Nebula IPTV";
   errorMsg.classList.remove("show");
   buffering.classList.add("show");
 
-  if (hls) { hls.destroy(); hls = null; }
+  stopAndRelease();
 
   const isHLS = url.includes(".m3u8") || url.includes("type=m3u8") || url.includes("output=m3u8");
 
@@ -315,6 +322,15 @@ function loadStream(url, name) {
     video.play().catch(() => {});
   }
 }
+
+/* ── Stop playback when tab is closed or navigated away ── */
+window.addEventListener("beforeunload", stopAndRelease);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    video.pause();
+    if (hls) hls.stopLoad();
+  }
+});
 
 /* ════════════════════════════════════════════════════
    Boot: load stream + playlist from storage
