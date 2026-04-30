@@ -31,6 +31,8 @@ const sidebarSearch   = document.getElementById("sidebar-search");
 const sidebarList     = document.getElementById("sidebar-list");
 const plLabel         = document.getElementById("pl-label");
 const plCount         = document.getElementById("pl-count");
+const btnSidebarCats  = document.getElementById("btn-sidebar-cats");
+const btnSidebarBack  = document.getElementById("btn-sidebar-back");
 
 /* ── Playlist + category state ── */
 let playlist    = [];   // [{ url, name, logo? }]
@@ -367,8 +369,6 @@ const tpSubLabel        = document.getElementById("tp-sub-label");
 const tpSubList         = document.getElementById("tp-sub-list");
 const tpAudLabel        = document.getElementById("tp-aud-label");
 const tpAudList         = document.getElementById("tp-aud-list");
-const btnSidebarCats    = document.getElementById("btn-sidebar-cats");
-const btnSidebarBack    = document.getElementById("btn-sidebar-back");
 
 /* ── Track panel ── */
 function buildTrackPanel() {
