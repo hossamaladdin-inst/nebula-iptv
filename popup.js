@@ -228,6 +228,7 @@ function openCategoryFiltered(cat, searchTerm = "") {
 function renderStreamList(streams, filterVal = "") {
   const q = filterVal.toLowerCase();
   const filtered = streams.filter(s => (s.name || s.title || "").toLowerCase().includes(q));
+  state.visibleStreams = filtered; // track for prev/next playlist
   streamCount.textContent = `${filtered.length} item(s)`;
   streamList.innerHTML = "";
   if (!filtered.length) {
@@ -279,23 +280,33 @@ function escHtml(str) {
 ═══════════════════════════════════════════════════ */
 
 async function playOrBrowse(stream) {
-  // Series → show seasons/episodes first
+  // Series folder → show seasons/episodes first
   if (state.currentType === "series" && state.sourceType === "xtream" && stream.series_id) {
     await openSeriesInfo(stream);
     return;
   }
 
-  let streamUrl;
-  if (state.sourceType === "m3u") {
-    streamUrl = stream.url;
-  } else {
-    const ext = stream.container_extension || (state.currentType === "live" ? "m3u8" : "mp4");
-    const id  = stream.stream_id || stream.series_id;
-    streamUrl = XtreamAPI.streamUrl(state.server, state.user, state.pass, state.currentType, id, ext);
+  function buildStreamUrl(s) {
+    if (state.sourceType === "m3u") return s.url;
+    const ext = s.container_extension || (state.currentType === "live" ? "m3u8" : "mp4");
+    const id  = s.stream_id || s.series_id;
+    return XtreamAPI.streamUrl(state.server, state.user, state.pass, state.currentType, id, ext);
   }
 
-  // Save last played so background.js can open player tab
-  await chrome.storage.local.set({ lastStream: { url: streamUrl, name: stream.name || stream.title } });
+  const streamUrl = buildStreamUrl(stream);
+
+  // Build playlist for prev/next — use the currently-visible filtered list
+  const visible = state.visibleStreams || [stream];
+  const playlist = visible
+    .filter(s => !(state.currentType === "series" && s.series_id)) // skip series folders
+    .map(s => ({ url: buildStreamUrl(s), name: s.name || s.title || "" }));
+  const currentIdx = Math.max(0, playlist.findIndex(p => p.url === streamUrl));
+
+  await chrome.storage.local.set({
+    lastStream:     { url: streamUrl, name: stream.name || stream.title },
+    playerPlaylist: playlist,
+    playerIdx:      currentIdx,
+  });
   chrome.runtime.sendMessage({ action: "openPlayer", url: streamUrl, name: stream.name || stream.title });
 }
 

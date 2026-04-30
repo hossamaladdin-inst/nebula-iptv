@@ -188,19 +188,87 @@
     }
     #buffering.show { display: block; }
     @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+    /* ── Sidebar ── */
+    #sidebar-trigger {
+      position: absolute;
+      top: 0; left: 0; bottom: 0; width: 18px;
+      z-index: 29; cursor: pointer;
+    }
+    #sidebar {
+      position: absolute;
+      top: 0; left: 0; bottom: 0; width: 300px;
+      background: rgba(8,8,18,0.93);
+      border-right: 1px solid #1a1a2e;
+      backdrop-filter: blur(10px);
+      z-index: 30;
+      display: flex; flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+    }
+    #sidebar.show { transform: translateX(0); }
+    #sidebar-header {
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid #1a1a2e;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #pl-label { color: #a78bfa; font-weight: 700; font-size: 13px; }
+    #pl-count  { color: #5555aa; font-size: 11px; }
+    #sidebar-search {
+      margin: 8px 10px 4px;
+      background: #0d0d1a;
+      border: 1px solid #2a2a4a;
+      color: #e0e0f0;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      width: calc(100% - 20px);
+      outline: none;
+    }
+    #sidebar-list {
+      flex: 1; overflow-y: auto; list-style: none;
+      scrollbar-width: thin; scrollbar-color: #2a2a4a transparent;
+    }
+    #sidebar-list li {
+      padding: 7px 12px;
+      font-size: 12px; color: #bbb;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      border-left: 3px solid transparent;
+      transition: background 0.1s;
+    }
+    #sidebar-list li:hover  { background: #1a1a2e; color: #e0e0f0; }
+    #sidebar-list li.active { background: #1a1a2e; border-left-color: #7c3aed; color: #fff; }
+    #sidebar-list li .sb-num  { color: #5555aa; font-size: 10px; min-width: 26px; text-align: right; flex-shrink: 0; }
+    #sidebar-list li .sb-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; border-radius: 3px; }
+    #sidebar-list li .sb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   </style>
 </head>
 <body>
 
   <!-- ── Top bar ── -->
   <div id="topbar">
-    <span class="logo">� Nebula IPTV</span>
+    <span class="logo">&#x1F300; Nebula IPTV</span>
     <span id="stream-title">Loading…</span>
+    <button class="ctrl-btn" id="btn-sidebar" title="Toggle playlist (L)" style="font-size:15px">&#9776;</button>
   </div>
 
   <!-- ── Video area ── -->
   <div id="video-wrap">
     <video id="video" preload="auto"></video>
+
+    <!-- Sidebar hover trigger -->
+    <div id="sidebar-trigger"></div>
+
+    <!-- Auto-hide playlist sidebar -->
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <span id="pl-label">Playlist</span>
+        <span id="pl-count"></span>
+      </div>
+      <input id="sidebar-search" type="search" placeholder="Filter…" />
+      <ul id="sidebar-list"></ul>
+    </div>
 
     <!-- Click-to-pause overlay -->
     <div id="overlay">
@@ -218,6 +286,9 @@
 
       <!-- Button row -->
       <div id="btn-row">
+        <!-- Prev channel -->
+        <button class="ctrl-btn" id="btn-prev" title="Previous ([)">⏮</button>
+
         <!-- Play/Pause -->
         <button class="ctrl-btn" id="btn-play" title="Play/Pause (Space)">▶</button>
 
@@ -226,6 +297,12 @@
 
         <!-- Fast forward 10s -->
         <button class="ctrl-btn" id="btn-ffw" title="Forward 10s (→)">⏩</button>
+
+        <!-- Next channel -->
+        <button class="ctrl-btn" id="btn-next" title="Next (])">⏭</button>
+
+        <!-- Playlist position -->
+        <span id="pl-pos" style="font-size:11px;color:#5555aa;min-width:40px;text-align:center"></span>
 
         <!-- Slower -->
         <button class="ctrl-btn" id="btn-slower" title="Slower">🐢</button>

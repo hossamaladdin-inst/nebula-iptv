@@ -1,31 +1,48 @@
 "use strict";
 
-const video     = document.getElementById("video");
-const overlay   = document.getElementById("overlay");
-const bigIcon   = document.getElementById("big-icon");
-const controls  = document.getElementById("controls");
-const btnPlay   = document.getElementById("btn-play");
-const btnRw     = document.getElementById("btn-rw");
-const btnFfw    = document.getElementById("btn-ffw");
-const btnMute   = document.getElementById("btn-mute");
-const btnFs     = document.getElementById("btn-fs");
-const btnSlower = document.getElementById("btn-slower");
-const btnFaster = document.getElementById("btn-faster");
-const seekbar   = document.getElementById("seekbar");
-const volbar    = document.getElementById("volbar");
-const rateBadge = document.getElementById("rate-badge");
-const timeCur   = document.getElementById("time-current");
-const timeTotal = document.getElementById("time-total");
-const buffering = document.getElementById("buffering");
-const errorMsg  = document.getElementById("error-msg");
-const errorText = document.getElementById("error-text");
-const titleEl   = document.getElementById("stream-title");
+/* ── DOM refs ── */
+const video       = document.getElementById("video");
+const overlay     = document.getElementById("overlay");
+const bigIcon     = document.getElementById("big-icon");
+const controls    = document.getElementById("controls");
+const btnPlay     = document.getElementById("btn-play");
+const btnPrev     = document.getElementById("btn-prev");
+const btnNext     = document.getElementById("btn-next");
+const btnRw       = document.getElementById("btn-rw");
+const btnFfw      = document.getElementById("btn-ffw");
+const btnMute     = document.getElementById("btn-mute");
+const btnFs       = document.getElementById("btn-fs");
+const btnSlower   = document.getElementById("btn-slower");
+const btnFaster   = document.getElementById("btn-faster");
+const btnSidebar  = document.getElementById("btn-sidebar");
+const seekbar     = document.getElementById("seekbar");
+const volbar      = document.getElementById("volbar");
+const rateBadge   = document.getElementById("rate-badge");
+const plPos       = document.getElementById("pl-pos");
+const timeCur     = document.getElementById("time-current");
+const timeTotal   = document.getElementById("time-total");
+const buffering   = document.getElementById("buffering");
+const errorMsg    = document.getElementById("error-msg");
+const errorText   = document.getElementById("error-text");
+const titleEl     = document.getElementById("stream-title");
+const sidebar         = document.getElementById("sidebar");
+const sidebarTrigger  = document.getElementById("sidebar-trigger");
+const sidebarSearch   = document.getElementById("sidebar-search");
+const sidebarList     = document.getElementById("sidebar-list");
+const plLabel         = document.getElementById("pl-label");
+const plCount         = document.getElementById("pl-count");
+
+/* ── Playlist state ── */
+let playlist   = [];   // [{ url, name, logo? }]
+let currentIdx = 0;
 
 /* ── Rates cycle ── */
 const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4];
 let rateIdx = RATES.indexOf(1);
 
-/* ── Auto-hide controls ── */
+/* ══════════════════════════════════════════════════
+   Auto-hide controls
+══════════════════════════════════════════════════ */
 let hideTimer = null;
 function resetHideTimer() {
   controls.classList.remove("hide");
@@ -36,6 +53,98 @@ function resetHideTimer() {
 }
 document.addEventListener("mousemove", resetHideTimer);
 document.addEventListener("keydown",   resetHideTimer);
+
+/* ══════════════════════════════════════════════════
+   Sidebar auto-hide
+══════════════════════════════════════════════════ */
+let sidebarTimer  = null;
+let sidebarPinned = false;
+
+function showSidebar() {
+  sidebar.classList.add("show");
+  clearTimeout(sidebarTimer);
+}
+function scheduleSidebarHide() {
+  if (sidebarPinned) return;
+  clearTimeout(sidebarTimer);
+  sidebarTimer = setTimeout(() => sidebar.classList.remove("show"), 2500);
+}
+function toggleSidebar() {
+  sidebarPinned = !sidebarPinned;
+  if (sidebarPinned) showSidebar();
+  else sidebarTimer = setTimeout(() => sidebar.classList.remove("show"), 800);
+}
+
+sidebarTrigger.addEventListener("mouseenter", showSidebar);
+sidebar.addEventListener("mouseenter",  showSidebar);
+sidebar.addEventListener("mouseleave",  scheduleSidebarHide);
+sidebarTrigger.addEventListener("mouseleave", scheduleSidebarHide);
+btnSidebar.addEventListener("click", toggleSidebar);
+
+/* ══════════════════════════════════════════════════
+   Sidebar rendering
+══════════════════════════════════════════════════ */
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function renderSidebar(filterVal = "") {
+  const q = filterVal.toLowerCase();
+  const items = playlist
+    .map((p, i) => ({ ...p, _i: i }))
+    .filter(p => !q || p.name.toLowerCase().includes(q));
+
+  plLabel.textContent = "Playlist";
+  plCount.textContent = playlist.length ? `${playlist.length} items` : "";
+  sidebarList.innerHTML = "";
+
+  if (!items.length) {
+    sidebarList.innerHTML = '<li style="color:#5555aa;cursor:default;padding:10px 14px">No results</li>';
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement("li");
+    if (item._i === currentIdx) li.classList.add("active");
+    const logoHtml = item.logo
+      ? `<img class="sb-logo" src="${escHtml(item.logo)}" alt="" onerror="this.style.display='none'">`
+      : "";
+    li.innerHTML =
+      `<span class="sb-num">${item._i + 1}</span>` +
+      logoHtml +
+      `<span class="sb-name">${escHtml(item.name || "Unnamed")}</span>`;
+    li.addEventListener("click", () => { navigateTo(item._i); scheduleSidebarHide(); });
+    sidebarList.appendChild(li);
+  }
+  const active = sidebarList.querySelector("li.active");
+  if (active) active.scrollIntoView({ block: "nearest" });
+}
+
+sidebarSearch.addEventListener("input", () => renderSidebar(sidebarSearch.value));
+
+/* ══════════════════════════════════════════════════
+   Playlist navigation
+══════════════════════════════════════════════════ */
+function updatePlPos() {
+  if (plPos) plPos.textContent = playlist.length ? `${currentIdx + 1}/${playlist.length}` : "";
+  if (btnPrev) btnPrev.disabled = currentIdx <= 0;
+  if (btnNext) btnNext.disabled = currentIdx >= playlist.length - 1;
+}
+
+function navigateTo(idx) {
+  if (idx < 0 || idx >= playlist.length) return;
+  currentIdx = idx;
+  const item = playlist[idx];
+  loadStream(item.url, item.name);
+  chrome.storage.local.set({ playerIdx: idx, lastStream: { url: item.url, name: item.name } });
+  renderSidebar(sidebarSearch.value);
+  updatePlPos();
+}
+
+function prevStream() { if (currentIdx > 0) navigateTo(currentIdx - 1); }
+function nextStream() { if (currentIdx < playlist.length - 1) navigateTo(currentIdx + 1); }
+
+if (btnPrev) btnPrev.addEventListener("click", () => { prevStream(); flashIcon("⏮"); });
+if (btnNext) btnNext.addEventListener("click", () => { nextStream(); flashIcon("⏭"); });
 
 /* ── Format time ── */
 function fmt(s) {
@@ -154,6 +263,9 @@ document.addEventListener("keydown", e => {
     case "f": case "F": btnFs.click(); break;
     case ",": setRate(rateIdx - 1); break;
     case ".": setRate(rateIdx + 1); break;
+    case "[": prevStream(); flashIcon("\u23ee"); break;
+    case "]": nextStream(); flashIcon("\u23ed"); break;
+    case "l": case "L": toggleSidebar(); break;
   }
 });
 
@@ -204,22 +316,49 @@ function loadStream(url, name) {
   }
 }
 
-/* ── Boot: read URL from query string or storage ── */
+/* ════════════════════════════════════════════════════
+   Boot: load stream + playlist from storage
+════════════════════════════════════════════════════ */
 (async () => {
-  const params = new URLSearchParams(window.location.search);
+  const stored = await chrome.storage.local.get(["playerPlaylist", "playerIdx", "lastStream"]);
+
+  // Load playlist
+  if (Array.isArray(stored.playerPlaylist) && stored.playerPlaylist.length) {
+    playlist   = stored.playerPlaylist;
+    currentIdx = typeof stored.playerIdx === "number" ? stored.playerIdx : 0;
+  }
+
+  // Determine what to play
+  const params    = new URLSearchParams(window.location.search);
   const urlParam  = params.get("url");
   const nameParam = params.get("name");
 
+  let playUrl, playName;
   if (urlParam) {
-    loadStream(decodeURIComponent(urlParam), decodeURIComponent(nameParam || ""));
+    playUrl  = decodeURIComponent(urlParam);
+    playName = decodeURIComponent(nameParam || "");
+    const match = playlist.findIndex(p => p.url === playUrl);
+    if (match >= 0) currentIdx = match;
+  } else if (stored.lastStream?.url) {
+    playUrl  = stored.lastStream.url;
+    playName = stored.lastStream.name || "";
+    const match = playlist.findIndex(p => p.url === playUrl);
+    if (match >= 0) currentIdx = match;
+  }
+
+  if (playUrl) {
+    loadStream(playUrl, playName);
   } else {
-    // Fallback: check storage for lastStream
-    const { lastStream } = await chrome.storage.local.get("lastStream");
-    if (lastStream && lastStream.url) {
-      loadStream(lastStream.url, lastStream.name || "");
-    } else {
-      titleEl.textContent = "No stream selected";
-      buffering.classList.remove("show");
-    }
+    titleEl.textContent = "No stream selected";
+    buffering.classList.remove("show");
+  }
+
+  renderSidebar();
+  updatePlPos();
+
+  // Briefly show sidebar on first load so user knows it exists
+  if (playlist.length > 1) {
+    showSidebar();
+    sidebarTimer = setTimeout(() => sidebar.classList.remove("show"), 3000);
   }
 })();
