@@ -145,7 +145,7 @@ function updateCacheStatus() {
   }
   // Live-refresh the category badges if a search is active
   if (catSearch.value.trim()) {
-    const cats = state.sourceType === "m3u" ? state.m3uGroups : state.categories;
+    const cats = (state.sourceType === "m3u" || state.sourceType === "file") ? state.m3uGroups : state.categories;
     renderCategoryList(cats, catSearch.value);
   }
 }
@@ -211,7 +211,7 @@ function openCategoryFiltered(cat, searchTerm = "") {
   (async () => {
     try {
       let streams;
-      if (state.sourceType === "m3u") {
+      if (state.sourceType === "m3u" || state.sourceType === "file") {
         streams = searchTerm && cat._matchedStreams ? cat._matchedStreams : (cat.streams || []);
       } else {
         streams = await XtreamAPI.fetchStreams(
@@ -292,7 +292,7 @@ async function playOrBrowse(stream) {
   }
 
   function buildStreamUrl(s) {
-    if (state.sourceType === "m3u") return s.url;
+    if (state.sourceType === "m3u" || state.sourceType === "file") return s.url;
     const ext = s.container_extension || (state.currentType === "live" ? "m3u8" : "mp4");
     const id  = s.stream_id || s.series_id;
     return XtreamAPI.streamUrl(state.server, state.user, state.pass, state.currentType, id, ext);
@@ -375,8 +375,8 @@ async function loadCategories(type) {
   showSpinner(catList);
 
   try {
-    if (state.sourceType === "m3u") {
-      // M3U: all streams already grouped, just show them
+    if (state.sourceType === "m3u" || state.sourceType === "file") {
+      // M3U/file: streams already grouped in memory
       renderCategoryList(state.m3uGroups);
     } else {
       state.categories = await XtreamAPI.fetchCategories(state.server, state.user, state.pass, type);
@@ -742,7 +742,7 @@ $("btn-back-cats").addEventListener("click", () => {
   streamListWrap.classList.add("hidden");
   catListWrap.classList.remove("hidden");
   catSearch.value = "";
-  if (state.sourceType === "m3u") {
+  if (state.sourceType === "m3u" || state.sourceType === "file") {
     renderCategoryList(state.m3uGroups);
   } else {
     renderCategoryList(state.categories);
@@ -753,7 +753,7 @@ $("btn-back-cats").addEventListener("click", () => {
    Live search / filter
 ═══════════════════════════════════════════════════ */
 catSearch.addEventListener("input", () => {
-  const cats = state.sourceType === "m3u" ? state.m3uGroups : state.categories;
+  const cats = (state.sourceType === "m3u" || state.sourceType === "file") ? state.m3uGroups : state.categories;
   renderCategoryList(cats, catSearch.value.trim());
 });
 
