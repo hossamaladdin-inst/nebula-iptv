@@ -33,6 +33,7 @@
         <div id="source-tabs">
           <button class="src-tab active" data-src="xtream">Xtream</button>
           <button class="src-tab" data-src="m3u">M3U URL</button>
+          <button class="src-tab" data-src="file">M3U File</button>
         </div>
 
         <div id="src-xtream">
@@ -52,6 +53,14 @@
             <input id="cfg-m3u" type="url" placeholder="http://server/get.php?username=…" />
           </label>
           <p class="hint">Xtream get.php URLs are auto-detected and use the API directly.</p>
+        </div>
+
+        <div id="src-file" class="hidden">
+          <label style="cursor:pointer">
+            M3U file(s) — select one or multiple
+            <input id="cfg-file" type="file" accept=".m3u,.m3u8" multiple style="margin-top:6px;width:100%;color:#a78bfa;font-size:12px" />
+          </label>
+          <p class="hint">Each file becomes a separate playlist. Name field above is used as prefix.</p>
         </div>
 
         <div class="row">

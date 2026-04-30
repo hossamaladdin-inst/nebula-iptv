@@ -67,10 +67,24 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     chrome.tabs.query({ url: chrome.runtime.getURL("player.html*") }, (tabs) => {
       if (tabs.length > 0) {
         chrome.tabs.update(tabs[0].id, { url: playerUrl, active: true });
+        chrome.storage.local.set({ playerTabId: tabs[0].id });
       } else {
-        chrome.tabs.create({ url: playerUrl });
+        chrome.tabs.create({ url: playerUrl }, (tab) => {
+          chrome.storage.local.set({ playerTabId: tab.id });
+        });
       }
     });
+    return false;
+  }
+
+  if (msg.action === "closeStream") {
+    // Close the player tab and wipe stream storage
+    chrome.storage.local.get("playerTabId", ({ playerTabId }) => {
+      if (playerTabId) {
+        chrome.tabs.remove(playerTabId, () => { chrome.runtime.lastError; });
+      }
+    });
+    chrome.storage.local.remove(["playerTabId", "lastStream", "playerPlaylist", "playerIdx"]);
     return false;
   }
 
@@ -86,4 +100,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 
   return false;
+});
+
+// When the player tab is closed by the user, clear stream state
+chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.storage.local.get("playerTabId", ({ playerTabId }) => {
+    if (tabId === playerTabId) {
+      chrome.storage.local.remove(["playerTabId", "lastStream", "playerPlaylist", "playerIdx"]);
+    }
+  });
 });
