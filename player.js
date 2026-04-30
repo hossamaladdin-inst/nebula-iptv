@@ -374,7 +374,9 @@ document.addEventListener("click", (e) => {
 
 /* ── Mouse wheel volume ── */
 document.addEventListener("wheel", (e) => {
-  if (trackPanel.classList.contains("show")) return; // don't conflict with panel scroll
+  // Don't change volume if scrolling inside the track panel or the visible sidebar
+  if (trackPanel.classList.contains("show")) return;
+  if (sidebar.classList.contains("show") && sidebar.matches(":hover")) return;
   e.preventDefault();
   const delta = e.deltaY < 0 ? 0.05 : -0.05;
   video.volume = Math.min(1, Math.max(0, video.volume + delta));
