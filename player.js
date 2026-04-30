@@ -49,11 +49,13 @@ const topbar = document.getElementById("topbar");
 function resetHideTimer() {
   controls.classList.remove("hide");
   topbar.classList.remove("hide");
+  document.body.style.cursor = "";
   clearTimeout(hideTimer);
   hideTimer = setTimeout(() => {
     if (!video.paused) {
       controls.classList.add("hide");
       topbar.classList.add("hide");
+      document.body.style.cursor = "none";
     }
   }, 3000);
 }
@@ -222,7 +224,7 @@ overlay.addEventListener("click", () => {
 btnPlay.addEventListener("click", togglePlay);
 
 video.addEventListener("play",  () => { btnPlay.textContent = "⏸"; resetHideTimer(); });
-video.addEventListener("pause", () => { btnPlay.textContent = "▶"; controls.classList.remove("hide"); topbar.classList.remove("hide"); clearTimeout(hideTimer); });
+video.addEventListener("pause", () => { btnPlay.textContent = "▶"; controls.classList.remove("hide"); topbar.classList.remove("hide"); document.body.style.cursor = ""; clearTimeout(hideTimer); });
 
 function flashIcon(icon) {
   bigIcon.textContent = icon;
