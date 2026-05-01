@@ -72,6 +72,16 @@ const XtreamAPI = {
     return this._fetch(this.apiUrl(server, user, pass, actionMap[type], { category_id: categoryId }));
   },
 
+  /* ── All streams of a type (no category filter) — for deep search ── */
+  async fetchAllStreams(server, user, pass, type) {
+    const actionMap = {
+      live:   "get_live_streams",
+      vod:    "get_vod_streams",
+      series: "get_series",
+    };
+    return this._fetch(this.apiUrl(server, user, pass, actionMap[type]));
+  },
+
   /* ── Series episodes (for a specific series) ── */
   async fetchSeriesInfo(server, user, pass, seriesId) {
     return this._fetch(this.apiUrl(server, user, pass, "get_series_info", { series_id: seriesId }));
@@ -173,7 +183,13 @@ function renderCategoryList(cats, filterVal = "") {
 
   catList.innerHTML = "";
   if (!filtered.length) {
-    catList.innerHTML = '<li style="color:#5555aa;cursor:default">No matches found</li>';
+    // For Xtream: offer a deep search across all streams of this type
+    if (q && state.sourceType === "xtream") {
+      catList.innerHTML = `<li style="color:#5555aa;cursor:default">No categories match — <a id="deep-search-link" style="color:#a78bfa;cursor:pointer;text-decoration:underline">search all ${state.currentType}</a></li>`;
+      document.getElementById("deep-search-link")?.addEventListener("click", () => runDeepSearch(q));
+    } else {
+      catList.innerHTML = '<li style="color:#5555aa;cursor:default">No matches found</li>';
+    }
     return;
   }
   for (const cat of filtered) {
@@ -189,6 +205,28 @@ function renderCategoryList(cats, filterVal = "") {
                     <span class="play-btn">›</span>`;
     li.addEventListener("click", () => openCategoryFiltered(cat, q));
     catList.appendChild(li);
+  }
+}
+
+/* Deep search across all Xtream streams of current type */
+async function runDeepSearch(q) {
+  catList.innerHTML = `<li style="color:#a78bfa;cursor:default">⏳ Searching all ${state.currentType}…</li>`;
+  try {
+    const all = await XtreamAPI.fetchAllStreams(state.server, state.user, state.pass, state.currentType);
+    const hits = all.filter(s => (s.name || s.title || "").toLowerCase().includes(q.toLowerCase()));
+    if (!hits.length) {
+      catList.innerHTML = `<li style="color:#5555aa;cursor:default">No results for "${escHtml(q)}"</li>`;
+      return;
+    }
+    // Show results as a flat stream list
+    catListWrap.classList.add("hidden");
+    streamListWrap.classList.remove("hidden");
+    streamSearch.value = q;
+    state.currentCategory = { category_id: "__search__", category_name: `Results for "${q}"` };
+    state.streams = hits;
+    renderStreamList(hits);
+  } catch (e) {
+    catList.innerHTML = `<li style="color:#f87171">Error: ${escHtml(e.message)}</li>`;
   }
 }
 
