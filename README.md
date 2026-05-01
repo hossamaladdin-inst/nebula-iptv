@@ -35,7 +35,7 @@ A Chrome extension for browsing and playing IPTV streams from **Xtream Codes API
 2. Open `chrome://extensions`
 3. Enable **Developer mode** (top-right toggle)
 4. Click **Load unpacked** → select the repo folder
-5. Click the 🌌 Nebula IPTV icon in your toolbar
+5. Click the 🌌 Nebula IPTV icon in your toolbarnn
 
 ---
 

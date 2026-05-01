@@ -775,6 +775,18 @@ $("btn-back-cats").addEventListener("click", () => {
 catSearch.addEventListener("input", () => {
   const cats = (state.sourceType === "m3u" || state.sourceType === "file") ? state.m3uGroups : state.categories;
   renderCategoryList(cats, catSearch.value.trim());
+  // If only one category matches (and user typed something), auto-open it with the search term applied to streams
+  if (catSearch.value.trim()) {
+    const q = catSearch.value.trim().toLowerCase();
+    const matching = (cats || []).filter(cat => {
+      const cache = state.streamCache[state.currentType] || {};
+      const streams = cache[cat.category_id] || cat.streams || [];
+      return cat.category_name.toLowerCase().includes(q) || streams.some(s => (s.name || s.title || "").toLowerCase().includes(q));
+    });
+    if (matching.length === 1) {
+      openCategoryFiltered(matching[0], catSearch.value.trim());
+    }
+  }
 });
 
 streamSearch.addEventListener("input", () => {
