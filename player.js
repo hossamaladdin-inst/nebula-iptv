@@ -469,51 +469,117 @@ document.addEventListener("wheel", (e) => {
 
 /* ── HLS.js loader ── */
 let hls = null;
+let mkvSession = null;
+let nativeSession = null;
+
+const streamStatus = document.getElementById("stream-status");
+function setStreamStatus(msg) {
+  if (!streamStatus) return;
+  if (!msg) { streamStatus.classList.remove("show"); streamStatus.textContent = ""; return; }
+  streamStatus.textContent = msg;
+  streamStatus.classList.add("show");
+}
+
+function isMkvUrl(url) {
+  try {
+    const u = new URL(url);
+    return /\.mkv($|\?)/i.test(u.pathname);
+  } catch { return false; }
+}
 
 function stopAndRelease() {
   video.pause();
   if (hls) { hls.destroy(); hls = null; }
+  if (mkvSession) { try { mkvSession.stop(); } catch {} mkvSession = null; }
+  if (nativeSession) { try { nativeSession.stop(); } catch {} nativeSession = null; }
+  setStreamStatus(null);
   video.removeAttribute("src");
   video.load(); // abort any pending network request
 }
 
-function loadStream(url, name) {
+function attachHls(url, onReady) {
+  hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
+  hls.loadSource(url);
+  hls.attachMedia(video);
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    video.play().catch(() => {});
+    buildTrackPanel();
+    if (onReady) onReady();
+  });
+  hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, buildTrackPanel);
+  hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,    buildTrackPanel);
+  hls.on(Hls.Events.ERROR, (_e, data) => {
+    if (data.fatal) {
+      errorText.textContent = `HLS fatal error: ${data.details}`;
+      errorMsg.classList.add("show");
+      buffering.classList.remove("show");
+    }
+  });
+}
+
+async function loadStream(url, name) {
   titleEl.textContent = name || url;
   document.title      = name || "Nebula IPTV";
   errorMsg.classList.remove("show");
-  buffering.classList.add("show");
 
   stopAndRelease();
   btnTracks.style.display = "none";
   trackPanel.classList.remove("show");
 
+  buffering.classList.add("show");
+
   const isHLS = url.includes(".m3u8") || url.includes("type=m3u8") || url.includes("output=m3u8");
 
   if (isHLS && typeof Hls !== "undefined" && Hls.isSupported()) {
-    hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
-    hls.loadSource(url);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      video.play().catch(() => {});
-      buildTrackPanel();
-    });
-    hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, buildTrackPanel);
-    hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,    buildTrackPanel);
-    hls.on(Hls.Events.ERROR, (_e, data) => {
-      if (data.fatal) {
-        errorText.textContent = `HLS fatal error: ${data.details}`;
-        errorMsg.classList.add("show");
-        buffering.classList.remove("show");
-      }
-    });
-  } else if (video.canPlayType("application/vnd.apple.mpegurl") && isHLS) {
-    // Safari native HLS
-    video.src = url;
-    video.play().catch(() => {});
-  } else {
-    video.src = url;
-    video.play().catch(() => {});
+    attachHls(url);
+    return;
   }
+  if (video.canPlayType("application/vnd.apple.mpegurl") && isHLS) {
+    video.src = url;
+    video.play().catch(() => {});
+    return;
+  }
+
+  // For MKVs we always go through the native helper (it streams, never
+  // downloads). The wasm fallback is intentionally NOT called automatically
+  // because it would silently start a multi-GB download.
+  if (isMkvUrl(url)) {
+    if (typeof NativeMkv === "undefined") {
+      errorText.textContent = "MKV needs native helper but nativeStream.js failed to load.";
+      errorMsg.classList.add("show");
+      buffering.classList.remove("show");
+      return;
+    }
+    setStreamStatus("Probing native helper…");
+    let helperOk = false;
+    try { helperOk = await NativeMkv.available(); } catch {}
+    if (!helperOk) {
+      setStreamStatus(null);
+      errorText.textContent =
+        "Helper not running on http://127.0.0.1:9123. " +
+        "Double-click local_helper/start_helper.command to start it, " +
+        "or local_helper/install_launchagent.command to make it auto-start.";
+      errorMsg.classList.add("show");
+      buffering.classList.remove("show");
+      return;
+    }
+    setStreamStatus("Starting helper (transcoding live)…");
+    try {
+      const session = await NativeMkv.play(url);
+      nativeSession = session;
+      setStreamStatus(null);
+      attachHls(session.hlsUrl);
+    } catch (e) {
+      setStreamStatus(null);
+      errorText.textContent = `Native helper: ${e?.message || e}`;
+      errorMsg.classList.add("show");
+      buffering.classList.remove("show");
+    }
+    return;
+  }
+
+  video.src = url;
+  video.play().catch(() => {});
 }
 
 /* ── Stop playback when tab is closed or navigated away ── */
