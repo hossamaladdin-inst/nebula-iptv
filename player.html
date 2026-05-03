@@ -175,6 +175,22 @@
     }
     #error-msg.show { display: block; }
 
+    /* ── Streaming-transcode status pill ── */
+    #stream-status {
+      position: absolute;
+      top: 12px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(8,8,18,0.85);
+      border: 1px solid #2a2a4a;
+      color: #a78bfa;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: none;
+      z-index: 18;
+    }
+    #stream-status.show { display: block; }
+
     /* ── Buffering spinner ── */
     #buffering {
       position: absolute;
@@ -387,6 +403,9 @@
     <!-- Buffering -->
     <div id="buffering"></div>
 
+    <!-- Streaming transcode status (only shown when MKV with non-native audio) -->
+    <div id="stream-status"></div>
+
     <!-- Track picker panel -->
     <div id="track-panel">
       <div class="tp-section" id="tp-sub-label" style="display:none">Subtitles</div>
@@ -402,8 +421,10 @@
     </div>
   </div>
 
-  <!-- HLS.js for m3u8 streams -->
+  <!-- HLS.js for m3u8 streams (also used for the local helper's HLS output) -->
   <script src="libs/hls.min.js"></script>
+  <!-- Bridge to the local AC-3/DTS helper at 127.0.0.1:9123 -->
+  <script src="nativeStream.js"></script>
   <script src="player.js"></script>
 </body>
 </html>
